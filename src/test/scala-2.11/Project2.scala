@@ -17,6 +17,7 @@ object Project2 {
   case class Gossip_worker_done(source:String) extends gossip_simulation
   case class Push_sum_worker_done(sum_estimate:Double)extends gossip_simulation
   case object Startgossip extends gossip_simulation
+  case object Checktermninated extends gossip_simulation
 
   def main(args: Array[String]) {
     //println("No argugments found, please provide arguments")
@@ -64,10 +65,26 @@ object Project2 {
     var k: Int = 0
     var rumor:String = "Rumor"
     var terminated_node = new ListBuffer[String]
+    var terminated_node_count = 0
     var b:Long = 0
 
+    override  def preStart() = {
+      if (algorithm == "gossip") {
+        //Interval set so that worker will start the scheduler
+        val interval = 10
+        import context.dispatcher
+        context.system.scheduler.schedule(0 milliseconds, interval milliseconds, self, Checktermninated)
+      }
+    }
 
     def receive = {
+      case Checktermninated =>
+        if ( this.terminated_node_count == terminated_node_count){
+          println("Convergence time = " + (System.currentTimeMillis()-b))
+          context.stop(self)
+          System.exit(0)
+        }
+
       case Start =>
         //println("Master has sent the start message")
         if (topology == "3dgrid" || topology == "im3dgrid") {
@@ -102,10 +119,13 @@ object Project2 {
 
 
       case Gossip_worker_done(source:String) => {
+
         if (!(terminated_node contains source)){
           terminated_node += source
-        }
+          terminated_node_count += 1
 
+        }
+        /*
         //terminated_node += source
         //println("Termination node count :"+ terminated_node.length)
         if (terminated_node.length == node_count){
@@ -113,6 +133,8 @@ object Project2 {
           context.stop(self)
           System.exit(0)
         }
+        */
+        //terminated_node_count += 1
       }
 
       case Push_sum_worker_done(sum_estimate:Double) => {
@@ -140,9 +162,11 @@ object Project2 {
     var consecutive_round: Int = 0;
     var gossip_initiated: Boolean = false
 
+    //Ticker which after fixed duration spreads rumor
     override  def preStart() = {
       if (algorithm == "gossip") {
-        val interval = (self.path.name.toInt % 5) * 10
+        //Interval set so that worker will start the scheduler
+        val interval = (self.path.name.toInt % 10) * 10
         import context.dispatcher
         context.system.scheduler.schedule(0 milliseconds, interval milliseconds, self, Startgossip)
       }
