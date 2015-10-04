@@ -68,6 +68,9 @@ object Project2 {
     var terminated_node_count = 0
     var b:Long = 0
 
+    var sum_weight_ratio: Double = 0
+    //var weight_average:Double = 0
+
     override  def preStart() = {
       if (algorithm == "gossip") {
         //Interval set so that worker will start the scheduler
@@ -95,6 +98,10 @@ object Project2 {
             grid_size = math.cbrt(node_count).toInt
           }
         }
+
+        sum_weight_ratio = ((node_count.toDouble)*(node_count.toDouble -1)/2)/node_count.toDouble
+        //println("Avergae ration is :"+ sum_weight_ratio)
+
         //println("grid size :"+ grid_size)
         //println("nodecount:" + node_count)
 
@@ -138,10 +145,13 @@ object Project2 {
       }
 
       case Push_sum_worker_done(sum_estimate:Double) => {
-        //context.stop(self)
-        println("Convergence time = " + (System.currentTimeMillis()-b))
-        context.stop(self)
-        System.exit(0)
+          //context.stop(self)
+          //println("Sum estimate is :" +sum_estimate)
+            if (sum_estimate - sum_weight_ratio <= 1E-10) {
+            println("Convergence time = " + (System.currentTimeMillis() - b))
+            context.stop(self)
+            System.exit(0)
+          }
       }
     }
   }
@@ -309,16 +319,14 @@ object Project2 {
           context.parent ! Push_sum_worker_done(this.sum / this.weight)
           //context.stop(self)
         }
-        else {
-          this.sum = this.sum + sum_from_source
-          this.weight = this.weight + weight_from_source
-          this.sum = this.sum / 2
-          this.weight = this.weight / 2
-          val destination: String = get_my_neighbor()
-          context.actorSelection("../" + destination) ! push_sum_simulator(this.sum,this.weight)
-        }
+
+        this.sum = this.sum + sum_from_source
+        this.weight = this.weight + weight_from_source
+        this.sum = this.sum / 2
+        this.weight = this.weight / 2
+        val destination: String = get_my_neighbor()
+        context.actorSelection("../" + destination) ! push_sum_simulator(this.sum,this.weight)
       }
     }
   }
 }
-
