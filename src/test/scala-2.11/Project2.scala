@@ -3,8 +3,6 @@ import scala.collection.mutable.ListBuffer
 import scala.util.Random
 import scala.concurrent.duration._
 
-
-
 object Project2 {
 
   val push_sum_termination: Int = 3
@@ -180,9 +178,9 @@ object Project2 {
             neighbor_list += (i + grid_size_square).toString
             find_face_neighbor(i, grid_size, 2);
           }
-          else if ((i >= grid_size_square - 1) && i <= (((grid_size - 1) * grid_size_square) - 1)) {
+          else if ((i > grid_size_square - 1) && i <= (((grid_size - 1) * grid_size_square) - 1)) {
             neighbor_list += (i - grid_size_square).toString
-            neighbor_list += (i - grid_size_square).toString
+            neighbor_list += (i + grid_size_square).toString
             if ((i % grid_size_square - 1) != 0) {
               find_face_neighbor(i, grid_size, (i / (grid_size_square - 1)) + 1)
             }
@@ -198,21 +196,22 @@ object Project2 {
         case "im3dgrid" => {
           if (i >= 0 && i <= grid_size_square - 1) {
             neighbor_list += (i + grid_size_square).toString
-            find_face_neighbor(i, grid_size, 2);
+            find_face_neighbor(i, grid_size, 1);
           }
           else if ((i >= grid_size_square - 1) && i <= (((grid_size - 1) * grid_size_square) - 1)) {
             neighbor_list += (i - grid_size_square).toString
             neighbor_list += (i - grid_size_square).toString
-            if ((i % (grid_size_square - 1)) != 0) {
-              find_face_neighbor(i, grid_size, (i / (grid_size_square - 1)) + 1)
+            //To be modified
+            if ((i % grid_size_square) != 0) {
+              find_face_neighbor(i, grid_size, (i / (grid_size_square) + 1))
             }
             else {
-              find_face_neighbor(i, grid_size, (i / grid_size_square - 1))
+              find_face_neighbor(i, grid_size, (i / grid_size_square))
             }
           }
           else {
             neighbor_list += (i - grid_size_square).toString
-            find_face_neighbor(i, grid_size, 3)
+            find_face_neighbor(i, grid_size, grid_size)
           }
           //For random neighbor selection
           neighbor_list += Random.nextInt(no_nodes_actual).toString
@@ -221,20 +220,19 @@ object Project2 {
     }
 
     def find_face_neighbor (node_number:Int,grid_size:Int,k:Int) {
-      val z : Int = math.pow(grid_size,k).toInt
 
-      if ((i-z) >0) {
-        neighbor_list += (i-z).toString
+      if ((i-grid_size) >0) {
+        neighbor_list += (i-grid_size).toString
       }
-      if ((i+z) <= (grid_size*grid_size - 1)){
-        neighbor_list += (i+z).toString
+      if ((i+grid_size) <= (grid_size*grid_size*k - 1)){
+        neighbor_list += (i+grid_size).toString
       }
 
-      if ((i%z) == 0 ){
-        neighbor_list += (i-1).toString
-      }
-      else if (i%z == 1){
+      if ((i%grid_size) == 0 ){
         neighbor_list += (i+1).toString
+      }
+      else if (i%grid_size == grid_size-1){
+        neighbor_list += (i-1).toString
       }
       else{
         neighbor_list += (i+1).toString
@@ -285,7 +283,7 @@ object Project2 {
 
         if (consecutive_round == push_sum_termination) {
           context.parent ! Push_sum_worker_done(this.sum / this.weight)
-          context.stop(self)
+          //context.stop(self)
         }
         else {
           this.sum = this.sum + sum_from_source
